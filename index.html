@@ -2,7 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Image Connect Editor PRO v12</title>
+<title>Image Connect Editor PRO v13</title>
+<link rel="canonical" href="https://oksanabashlykova10-eng.github.io/Image_Connect_Editor/">
+<meta property="og:url" content="https://oksanabashlykova10-eng.github.io/Image_Connect_Editor/">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Cinzel:wght@700&family=Comic+Neue:wght@700&family=Courier+Prime:wght@700&family=Montserrat:wght@700&family=Permanent+Marker&family=Orbitron:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -266,6 +268,26 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
   .v12-export-actions {grid-template-columns:1fr;}
   .v12-export-actions .action-btn {min-height:48px;}
 }
+
+
+/* v13: private local draft auto-recovery. The overlay appears only when a saved draft exists. */
+.icg-draft-overlay[hidden]{display:none !important;}
+.icg-draft-overlay{position:fixed;z-index:99991;inset:0;background:rgba(5,5,14,.84);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;}
+.icg-draft-dialog{width:min(96vw,510px);max-height:94dvh;overflow:auto;background:linear-gradient(145deg,#232236,#151821);color:#f6f1ff;border:1px solid #ad83f0;box-shadow:0 0 40px rgba(176,38,255,.27),0 15px 75px rgba(0,0,0,.75);border-radius:20px;padding:30px 27px 27px;box-sizing:border-box;text-align:center;}
+.icg-draft-dialog h2{margin:3px 0 16px;color:#f8e8ff;font-size:23px;line-height:1.3;text-shadow:0 0 16px #b026ff88;}
+.icg-draft-dialog p{font-size:13px;line-height:1.65;color:#cdd2df;margin:10px 0;}
+.icg-draft-summary{border:1px solid #4c496a;border-radius:12px;background:#111620;padding:13px 15px;margin:17px auto 21px;text-align:left;}
+.icg-draft-summary strong{font-size:14px;color:#ecf9d2;display:block;overflow-wrap:anywhere;margin-bottom:5px;}
+.icg-draft-summary time,.icg-draft-summary span{display:block;font-size:12px;line-height:1.7;color:#b8bfd1;}
+.icg-draft-buttons{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:18px;}
+.icg-draft-buttons button{border:1px solid transparent;border-radius:10px;min-height:55px;padding:11px 10px;font-weight:800;font-family:inherit;font-size:13px;line-height:1.45;cursor:pointer;transition:transform .15s,filter .15s;}
+.icg-draft-buttons button:hover{filter:brightness(1.14);transform:translateY(-1px);}
+.icg-draft-buttons button:focus-visible{outline:3px solid #fff;outline-offset:3px;}
+#icg-draft-continue{background:#00c978;color:#061e14;}#icg-draft-new{background:#292b3b;color:#f7edff;border-color:#a67bf1;}
+.icg-draft-tip{font-size:11px !important;color:#a5aabc !important;margin-top:18px !important;}
+.icg-autosave-status{display:block;min-height:16px;margin-top:9px;font-size:12px;color:#8be8c3;line-height:1.45;}
+.icg-autosave-status.is-error{color:#ffd18b;}
+@media(max-width:480px){.icg-draft-dialog{padding:23px 17px;}.icg-draft-dialog h2{font-size:19px;}.icg-draft-buttons{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -279,7 +301,7 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
 
 <div class="editor-layout">
   <div class="settings-panel">
-    <div class="editor-nav-head"><div class="editor-nav-title">⚡ НАСТРОЙКИ ИГРЫ</div><span>IMAGE CONNECT PRO · v12</span></div>
+    <div class="editor-nav-head"><div class="editor-nav-title">⚡ НАСТРОЙКИ ИГРЫ</div><span>IMAGE CONNECT PRO · v13</span></div>
     <nav class="editor-tab-nav" role="tablist" aria-label="Разделы редактора">
 <button type="button" role="tab" class="editor-tab active" id="tab-btn-global" data-editor-tab="global" aria-controls="tab-page-global" aria-selected="true" style="--tab-glow:var(--tab-global)"><span class="tab-emoji">🌐</span><span class="tab-name">Глобальные настройки</span></button>
 <button type="button" role="tab" class="editor-tab " id="tab-btn-start" data-editor-tab="start" aria-controls="tab-page-start" aria-selected="false" style="--tab-glow:var(--tab-start)"><span class="tab-emoji">🎬</span><span class="tab-name">Заставка</span></button>
@@ -620,6 +642,7 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
     </div>
     <input type="file" id="project-json-file" accept=".json,application/json" style="display:none;">
     <div id="project-message" role="status" class="hint" style="margin-top:10px;"></div>
+    <div id="icg-autosave-status" role="status" aria-live="polite" class="icg-autosave-status">Автосохранение готово к работе</div>
 
 
     <div class="section-title">🔗 Экспорт готовой игры</div>
@@ -722,7 +745,28 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
   </section>
 </div>
 
+<!-- v13: browser-local saved draft recovery, not included in exported games. -->
+<div id="icg-draft-overlay" class="icg-draft-overlay" hidden>
+  <section class="icg-draft-dialog" role="dialog" aria-modal="true" aria-labelledby="icg-draft-title" aria-describedby="icg-draft-description">
+    <h2 id="icg-draft-title">💾 Продолжить прошлую работу?</h2>
+    <p id="icg-draft-description">В этом браузере сохранился проект, с которым вы работали раньше.</p>
+    <div class="icg-draft-summary"><strong id="icg-draft-name">Моя игра</strong><time id="icg-draft-date"></time><span id="icg-draft-details"></span></div>
+    <div class="icg-draft-buttons">
+      <button type="button" id="icg-draft-continue">↩️ Продолжить работу</button>
+      <button type="button" id="icg-draft-new">✨ Создать новую игру</button>
+    </div>
+    <p class="icg-draft-tip">Автосохранение работает в браузере на этом устройстве. Для надёжной копии проекта сохраняйте JSON.</p>
+  </section>
+</div>
+
 <script>
+  // v13: canonical location of the EDITOR on GitHub Pages, never used as the generated GAME URL.
+  const IMAGE_CONNECT_EDITOR_HOME = "https://oksanabashlykova10-eng.github.io/Image_Connect_Editor/";
+  const V13_DEFAULT_PROJECT = {"format":"NeonImageConnectEditor","version":13,"settings":{"theme-preset":"forest","ui-language":"ru","protect-enabled":true,"protect-editor-enabled":false,"latex-enabled":false,"all-font":"'Montserrat', sans-serif","all-title-size":"44","all-title-color":"#eaffcd","all-button-size":"21","all-button-color":"#fff8d3","all-instruction-size":"24","all-instruction-color":"#f7ffe7","all-btn-bg-color":"#0e3025","all-btn-bg-opacity":"94","all-btn-border-color":"#b9f47d","all-btn-border-width":"2","all-btn-neon-enabled":true,"all-btn-neon-color":"#e9b45f","all-btn-neon-width":"12","title-card-bg-color":"#0e3025","title-card-bg-opacity":"88","title-card-border-color":"#e9b45f","title-card-border-width":"1","set-w-font":"'Montserrat', sans-serif","set-w-size":"21","set-w-color":"#f7ffe7","card-numbers-enabled":true,"card-number-color":"#ffffff","card-number-size":"19","set-label-bg-color":"#ec8b3c","set-label-bg-opacity":"88","set-label-border-color":"#d48402","set-label-border-width":"2","set-label-neon-enabled":true,"set-label-neon-color":"#f69104","set-label-neon-width":"11","start-enabled":true,"start-bg-type":"gradient","start-bg-color":"#0f0f13","start-bg-grad1":"#123e30","start-bg-grad2":"#47663c","start-bg-url":"","start-bg-dark":"0","start-bg-light":"0","start-bg-blur":"0","t-start-title":"Connect the words with the pictures","ts-start-title-size":"44","ts-start-title-color":"#eaffcd","ts-start-title-font":"'Montserrat', sans-serif","t-start-btn":"START GAME","ts-start-size":"21","ts-start-color":"#fff8d3","ts-start-font":"'Montserrat', sans-serif","start-btn-bg-color":"#0e3025","start-btn-bg-opacity":"94","start-btn-border-color":"#b9f47d","start-btn-border-width":"2","start-btn-neon-enabled":true,"start-btn-neon-color":"#e9b45f","start-btn-neon-width":"12","bg-type":"color","bg-color":"#f3f2d3","bg-grad1":"#17382e","bg-grad2":"#315d37","bg-url":"","bg-dark":"0","bg-light":"0","bg-blur":"0","timer-enabled":false,"timer-duration":"60","timer-color":"#b9f47d","set-main-color":"#b3e479","set-line-color":"#09e8ec","set-line-width":"4","t-inst":"Drag a line from the text to the correct point","ts-inst-size":"24","ts-inst-color":"#f7ffe7","ts-inst-font":"'Montserrat', sans-serif","inst-card-bg-color":"#143728","inst-card-bg-opacity":"88","inst-card-border-color":"#e9b45f","inst-card-border-width":"2","inst-card-neon-enabled":true,"inst-card-neon-color":"#d87f03","inst-card-neon-width":"10","inst-card-padding-x":"34","inst-card-padding-y":"12","t-btn-check":"Check Answers","ts-btn-size":"21","ts-btn-color":"#fff8d3","ts-btn-font":"'Montserrat', sans-serif","check-btn-bg-color":"#0e3025","check-btn-bg-opacity":"94","check-btn-border-color":"#b9f47d","check-btn-border-width":"2","check-btn-neon-enabled":true,"check-btn-neon-color":"#e9b45f","check-btn-neon-width":"12","win-bg-color":"#19402e","win-bg-opacity":"90","t-win-title":"YOU WON!","ts-win-title-size":"44","ts-win-title-color":"#eaffcd","ts-win-title-font":"'Montserrat', sans-serif","t-win-btn":"Play Again","ts-win-btn-size":"21","ts-win-btn-color":"#fff8d3","ts-win-btn-font":"'Montserrat', sans-serif","win-btn-bg-color":"#0e3025","win-btn-bg-opacity":"94","win-btn-border-color":"#b9f47d","win-btn-border-width":"2","win-btn-neon-enabled":true,"win-btn-neon-color":"#e9b45f","win-btn-neon-width":"12","fw-multi":true,"fw-color":"#b9f47d","fw-duration":"5","lose-bg-color":"#42392e","lose-bg-opacity":"90","t-lose-title":"YOU LOST!","ts-lose-title-size":"44","ts-lose-title-color":"#eaffcd","ts-lose-title-font":"'Montserrat', sans-serif","t-lose-btn":"Try Again","ts-lose-btn-size":"21","ts-lose-btn-color":"#fff8d3","ts-lose-btn-font":"'Montserrat', sans-serif","lose-btn-bg-color":"#0e3025","lose-btn-bg-opacity":"94","lose-btn-border-color":"#b9f47d","lose-btn-border-width":"2","lose-btn-neon-enabled":true,"lose-btn-neon-color":"#e9b45f","lose-btn-neon-width":"12","mapper-source-type":"url","img-url":"https://img.genially.com/67961b32a116fb001568a75e/58c4aed5-a779-4f35-b8e5-4662b009eb76.png","point-mode-1":"text","point-mode-2":"text","point-mode-3":"text","point-mode-4":"text"},"points":[{"id":1,"x":66.05168126125126,"y":17.266885252809274,"text":"This is a cloud.","cardMode":"text","audioData":"","audioMime":"","audioName":"","audioDuration":0,"side":"left","fSize":null,"fColor":null,"fFamily":"inherit"},{"id":2,"x":46.99741951013571,"y":16.73983097255792,"text":"This is a sun.","cardMode":"text","audioData":"","audioMime":"","audioName":"","audioDuration":0,"side":"right","fSize":null,"fColor":null,"fFamily":"inherit"},{"id":3,"x":25.968994693233782,"y":48.3616699230803,"text":"This is a girl.","cardMode":"text","audioData":"","audioMime":"","audioName":"","audioDuration":0,"side":"left","fSize":null,"fColor":null,"fFamily":"inherit"},{"id":4,"x":58.46253361147437,"y":50.47655610163658,"text":"This is a green butterfly.","cardMode":"text","audioData":"","audioMime":"","audioName":"","audioDuration":0,"side":"right","fSize":null,"fColor":null,"fFamily":"inherit"}],"assets":{"gameBackground":"","startBackground":"","mapperImage":""}};
+  let icgDraftActive=false,icgDraftApplying=false,icgDraftTimer=null,icgDraftRevision=0;
+  let icgDraftSaving=Promise.resolve();
+  let icgDraftCurrentSource=null;
+
   const fontOptionsHTML = `
     <option value="'Montserrat', sans-serif">Modern</option>
     <option value="'Orbitron', sans-serif">Neon Sci-Fi</option>
@@ -801,7 +845,7 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
     const token = ++loadGeneration;
     try {
       const data = await compactImage(input.files[0], 1920);
-      if (token > 0) setter(data);
+      if (token === loadGeneration) setter(data);
       updatePreviewDelay();
     } catch(error) { alert(error.message); }
   }
@@ -1267,24 +1311,29 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
   function updatePreviewDelay() {
     clearTimeout(timeout);
     timeout = setTimeout(updatePreview, 500);
+    scheduleDraftSave();
   }
 
   function projectMessage(message, bad=false) {
     const el = document.getElementById('project-message');
     el.textContent = message; el.style.color = bad ? '#ff8590' : '#7df4c0';
   }
-  window.saveProjectJSON = function() {
+  function captureProjectSnapshot() {
     const settings = {};
     document.querySelectorAll('.settings-panel input[id], .settings-panel select[id]').forEach(el => {
       if (el.type === 'file') return;
       settings[el.id] = el.type === 'checkbox' ? el.checked : el.value;
     });
-    const snapshot = {
-      format:'NeonImageConnectEditor', version:10,
+    return {
+      format:'NeonImageConnectEditor', version:13,
       settings,
       points:pointsData.map(p=>({...p})),
       assets:{gameBackground:bgFileDataUrl, startBackground:startBgFileDataUrl, mapperImage:mapperImageDataUrl}
     };
+  }
+  window.saveProjectJSON = function() {
+    const snapshot=captureProjectSnapshot();
+    const settings=snapshot.settings;
     const title = (settings['t-start-title'] || 'image-connect-project').trim().replace(/[^\w\u0400-\u04FF-]+/g,'_').slice(0,50) || 'image-connect-project';
     const blob = new Blob([JSON.stringify(snapshot, null, 2)], {type:'application/json'});
     const uri = URL.createObjectURL(blob);
@@ -1293,10 +1342,10 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
     setTimeout(()=>URL.revokeObjectURL(uri),30000);
     projectMessage('Проект сохранён: '+title+'.json');
   };
-  document.getElementById('project-json-file').addEventListener('change', async e => {
-    const file=e.target.files?.[0]; if (!file) return;
+  function applyProjectSnapshot(project) {
+    if (!project || typeof project!=='object') throw new Error('Неподдерживаемый проект.');
+    const oldFlag=icgDraftApplying; icgDraftApplying=true;
     try {
-      const project=JSON.parse(await file.text());
       if (project.format !== 'NeonImageConnectEditor' || !Array.isArray(project.points) || !project.settings || typeof project.settings !== 'object') throw new Error('Это не JSON-проект Image Connect Editor.');
       if (project.points.length > 250) throw new Error('Слишком много точек.');
       const legacy = Number(project.version || 3) <= 3;
@@ -1310,7 +1359,10 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
         fColor: !p.fColor || (legacy && String(p.fColor).toLowerCase()==='#ffffff') ? null : (/^#[0-9a-f]{6}$/i.test(p.fColor)?p.fColor:null),
         fFamily:String(p.fFamily||'inherit')
       }));
-      // First validate and read all data, then apply settings.
+      // All settings and points are validated before mutating the editor.
+      ++loadGeneration;
+      if(playbackAudioState.player){playbackAudioState.player.pause();playbackAudioState.player=null;}
+      pointAudioErrors.clear();pointAudioLoading.clear();
       if (!Object.hasOwn(project.settings,'theme-preset')) document.getElementById('theme-preset').value = 'custom';
       for (const [id,val] of Object.entries(project.settings)) {
         const el = document.getElementById(id);
@@ -1325,7 +1377,15 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
       pointCounter=Math.max(0, ...pointsData.map(p=>p.id));
       ['bg-type','start-bg-type','mapper-source-type'].forEach(id => document.getElementById(id).dispatchEvent(new Event('change')));
       refreshAdjustLabels(); syncNeonControls(); syncButtonControls(); syncMapperImage(); renderMapper(); v6SyncThemeCards(); applyEditorLanguage(false); updatePreview();
+    } finally {icgDraftApplying=oldFlag;}
+  }
+  document.getElementById('project-json-file').addEventListener('change', async e => {
+    const file=e.target.files?.[0]; if (!file) return;
+    try {
+      const project=JSON.parse(await file.text());
+      applyProjectSnapshot(project);
       projectMessage('Проект загружен: '+file.name);
+      scheduleDraftSave();
     } catch(err) { projectMessage('Ошибка загрузки: '+err.message,true); }
     e.target.value='';
   });
@@ -2268,6 +2328,7 @@ ${latexLibraries}
       if (dict[original]) el.textContent=dict[original];
       else el.textContent=original;
     }
+    v6SyncThemeCards(); // Restore the selected preset label after text localization.
     const h=document.querySelector('.preview-heading');
     if(h && h.firstChild?.nodeType===Node.TEXT_NODE)h.firstChild.textContent=(dict['👁️ ПРЕДПРОСМОТР']||'👁️ ПРЕДПРОСМОТР')+' ';
     const lines=V7_INLINE_DESCRIPTION.split('\n');
@@ -2364,6 +2425,183 @@ ${latexLibraries}
     document.getElementById('ui-language').addEventListener('change',updateGuideLabel);
     updateGuideLabel();
   })();
+
+
+  /* v13: last working draft. IndexedDB stores media-heavy projects; localStorage is only a small fallback.
+     Data never leaves the user's browser and is origin/partition specific (including inside Genially). */
+  const ICG_DRAFT_DB='ImageConnectEditor_EnglishBootcamp_Drafts';
+  const ICG_DRAFT_STORE='projects';
+  const ICG_DRAFT_KEY='latest';
+  const ICG_DRAFT_LOCAL='image-connect:englishbootcamp:last-project-v13';
+  function icgDraftStatus(text,bad=false){
+    const node=document.getElementById('icg-autosave-status');
+    if(node){node.textContent=text;node.classList.toggle('is-error',!!bad);}
+  }
+  function icgDraftOpenDb(){
+    return new Promise((resolve,reject)=>{
+      if(!('indexedDB' in window))return reject(new Error('IndexedDB недоступен'));
+      let req;
+      try{req=indexedDB.open(ICG_DRAFT_DB,1);}catch(err){reject(err);return;}
+      req.onupgradeneeded=()=>{
+        const db=req.result;
+        if(!db.objectStoreNames.contains(ICG_DRAFT_STORE))db.createObjectStore(ICG_DRAFT_STORE);
+      };
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error||new Error('Нельзя открыть хранилище'));
+      req.onblocked=()=>reject(new Error('Хранилище занято другой вкладкой'));
+    });
+  }
+  async function icgDraftIdbRead(){
+    const db=await icgDraftOpenDb();
+    try{return await new Promise((resolve,reject)=>{
+      const tx=db.transaction(ICG_DRAFT_STORE,'readonly');
+      const req=tx.objectStore(ICG_DRAFT_STORE).get(ICG_DRAFT_KEY);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error||new Error('Ошибка чтения'));
+    });}finally{db.close();}
+  }
+  async function icgDraftIdbWrite(entry){
+    const db=await icgDraftOpenDb();
+    try{return await new Promise((resolve,reject)=>{
+      const tx=db.transaction(ICG_DRAFT_STORE,'readwrite');
+      tx.objectStore(ICG_DRAFT_STORE).put(entry,ICG_DRAFT_KEY);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error('Ошибка записи'));
+      tx.onabort=()=>reject(tx.error||new Error('Запись прервана'));
+    });}finally{db.close();}
+  }
+  function icgDraftLocalRead(){
+    try{const raw=localStorage.getItem(ICG_DRAFT_LOCAL);return raw?JSON.parse(raw):null;}catch(_){return null;}
+  }
+  function icgDraftLocalWrite(entry){
+    const raw=JSON.stringify(entry);
+    // localStorage is commonly limited to ~5 MB and can be much smaller in an iframe.
+    if(raw.length>1600000)throw new Error('Проект слишком большой для резервного хранилища');
+    localStorage.setItem(ICG_DRAFT_LOCAL,raw);
+  }
+  function icgDraftValid(entry){return entry && typeof entry==='object' && Number.isFinite(Number(entry.savedAt)) && entry.project?.format==='NeonImageConnectEditor' && Array.isArray(entry.project.points) && entry.project.settings;}
+  async function icgDraftReadLatest(){
+    let idb=null;
+    try{idb=await icgDraftIdbRead();}catch(_){ }
+    const local=icgDraftLocalRead();
+    const valid=[idb,local].filter(icgDraftValid);
+    return valid.length?valid.sort((a,b)=>Number(b.savedAt)-Number(a.savedAt))[0]:null;
+  }
+  function scheduleDraftSave(){
+    if(!icgDraftActive||icgDraftApplying)return;
+    clearTimeout(icgDraftTimer);
+    const rev=++icgDraftRevision;
+    icgDraftStatus('● Есть изменения — автосохранение…');
+    icgDraftTimer=setTimeout(()=>icgDraftWrite(rev),650);
+  }
+  function icgDraftWrite(revision){
+    if(!icgDraftActive||icgDraftApplying)return icgDraftSaving;
+    const entry={schema:1,savedAt:Date.now(),project:captureProjectSnapshot()};
+    // Serialize writes to avoid older asynchronous requests overwriting newer work.
+    icgDraftSaving=icgDraftSaving.catch(()=>{}).then(async()=>{
+      if(revision!==icgDraftRevision)return;
+      let saved=false;
+      try{await icgDraftIdbWrite(entry);saved=true;}catch(e){console.warn('Local project IndexedDB unavailable',e);}
+      // Small projects also get a backup; large assets are stored only in IndexedDB.
+      try{icgDraftLocalWrite(entry);saved=true;}catch(_){ /* Keep the previous fallback backup. */ }
+      if(revision!==icgDraftRevision)return;
+      if(saved)icgDraftStatus('✓ Проект автоматически сохранён в этом браузере');
+      else icgDraftStatus('⚠ Автосохранение недоступно. Скачайте JSON во вкладке «Код».',true);
+    });
+    return icgDraftSaving;
+  }
+  async function icgDraftFlush(){
+    if(!icgDraftActive)return;
+    clearTimeout(icgDraftTimer);
+    if(icgDraftRevision)await icgDraftWrite(icgDraftRevision);
+  }
+  // Backup for browser shutdown: issue a write without waiting, when a draft is dirty.
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')void icgDraftFlush();});
+  window.addEventListener('pagehide',()=>{void icgDraftFlush();});
+  // Other form controls already call updatePreviewDelay(); this catches deferred and minor edits.
+  document.querySelector('.settings-panel').addEventListener('input',scheduleDraftSave,{capture:true});
+  document.querySelector('.settings-panel').addEventListener('change',scheduleDraftSave,{capture:true});
+
+  const icgDraftOverlay=document.getElementById('icg-draft-overlay');
+  const icgDraftContinue=document.getElementById('icg-draft-continue');
+  const icgDraftNew=document.getElementById('icg-draft-new');
+  const ICG_DRAFT_MODAL_TEXT={
+    ru:{heading:'💾 Продолжить прошлую работу?',description:'В этом браузере сохранился проект, с которым вы работали раньше.',date:'Последнее сохранение: ',count:'Карточек: ',cont:'↩️ Продолжить работу',fresh:'✨ Создать новую игру',note:'Автосохранение работает в браузере на этом устройстве. Для надёжной копии проекта сохраняйте JSON.'},
+    en:{heading:'💾 Continue your previous project?',description:'Your last project was saved in this browser.',date:'Last saved: ',count:'Cards: ',cont:'↩️ Continue editing',fresh:'✨ Create a new game',note:'Autosave stays in this browser on this device. Download a JSON project for a reliable backup.'},
+    es:{heading:'💾 ¿Continuar el proyecto anterior?',description:'Tu último proyecto está guardado en este navegador.',date:'Último guardado: ',count:'Tarjetas: ',cont:'↩️ Continuar',fresh:'✨ Crear un juego nuevo',note:'El guardado automático funciona en este navegador. Descarga un JSON como copia de seguridad.'},
+    de:{heading:'💾 Letztes Projekt fortsetzen?',description:'Ihr letztes Projekt wurde in diesem Browser gespeichert.',date:'Zuletzt gespeichert: ',count:'Karten: ',cont:'↩️ Weiterarbeiten',fresh:'✨ Neues Spiel erstellen',note:'Die automatische Speicherung gilt nur für diesen Browser. Sichern Sie Ihr Projekt zusätzlich als JSON.'},
+    fr:{heading:'💾 Reprendre le projet précédent ?',description:'Votre dernier projet a été enregistré dans ce navigateur.',date:'Dernier enregistrement : ',count:'Cartes : ',cont:'↩️ Continuer',fresh:'✨ Nouveau jeu',note:'La sauvegarde automatique reste dans ce navigateur. Téléchargez aussi le projet JSON.'},
+    kk:{heading:'💾 Алдыңғы жұмысты жалғастырасыз ба?',description:'Соңғы жоба осы браузерде сақталған.',date:'Соңғы сақтау: ',count:'Карточкалар: ',cont:'↩️ Жалғастыру',fresh:'✨ Жаңа ойын жасау',note:'Автоматты сақтау осы браузерде ғана жұмыс істейді. Қосымша көшірме үшін JSON жүктеп алыңыз.'},
+    ko:{heading:'💾 이전 작업을 이어서 하시겠어요?',description:'마지막 프로젝트가 이 브라우저에 저장되어 있습니다.',date:'마지막 저장: ',count:'카드: ',cont:'↩️ 이어서 작업',fresh:'✨ 새 게임 만들기',note:'자동 저장은 이 기기의 브라우저에만 보관됩니다. JSON 파일도 백업하세요.'},
+    zh:{heading:'💾 继续上次的项目吗？',description:'上次的项目保存在此浏览器中。',date:'上次保存：',count:'卡片数：',cont:'↩️ 继续编辑',fresh:'✨ 创建新游戏',note:'自动保存在此设备的浏览器中。建议另存 JSON 文件作为备份。'}
+  };
+  function icgDraftRestorePrompt(entry){
+    return new Promise(resolve=>{
+      // Render the previous project behind the modal, so the user can recognize it.
+      // Do so before localization: the restored project's language determines modal labels.
+      applyProjectSnapshot(entry.project);
+      const lang=document.getElementById('ui-language').value || 'ru';
+      const words=ICG_DRAFT_MODAL_TEXT[lang]||ICG_DRAFT_MODAL_TEXT.ru;
+      const locale={ru:'ru-RU',en:'en-GB',es:'es-ES',de:'de-DE',fr:'fr-FR',kk:'kk-KZ',ko:'ko-KR',zh:'zh-CN'}[lang]||'ru-RU';
+      const saved=new Date(Number(entry.savedAt));
+      document.getElementById('icg-draft-title').textContent=words.heading;
+      document.getElementById('icg-draft-description').textContent=words.description;
+      document.getElementById('icg-draft-name').textContent=String(entry.project.settings['t-start-title']||'My game').slice(0,120);
+      document.getElementById('icg-draft-date').textContent=words.date+saved.toLocaleString(locale,{dateStyle:'medium',timeStyle:'short'});
+      document.getElementById('icg-draft-details').textContent=words.count+entry.project.points.length;
+      icgDraftContinue.textContent=words.cont;
+      icgDraftNew.textContent=words.fresh;
+      document.querySelector('.icg-draft-tip').textContent=words.note;
+      icgDraftOverlay.hidden=false;
+      const choice=key=>{
+        icgDraftOverlay.hidden=true;
+        icgDraftContinue.removeEventListener('click',onContinue);
+        icgDraftNew.removeEventListener('click',onNew);
+        document.removeEventListener('keydown',onKey,true);
+        resolve(key);
+      };
+      const onContinue=()=>choice('resume');
+      const onNew=()=>choice('new');
+      const onKey=ev=>{
+        if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();return;}
+        if(ev.key==='Tab'){
+          const buttons=[icgDraftContinue,icgDraftNew];
+          const i=buttons.indexOf(document.activeElement);
+          if(ev.shiftKey && i===0){ev.preventDefault();icgDraftNew.focus();}
+          if(!ev.shiftKey && i===1){ev.preventDefault();icgDraftContinue.focus();}
+        }
+      };
+      icgDraftContinue.addEventListener('click',onContinue);
+      icgDraftNew.addEventListener('click',onNew);
+      document.addEventListener('keydown',onKey,true);
+      icgDraftContinue.focus();
+    });
+  }
+  async function icgDraftBootstrap(){
+    // Start with the EXACT author-supplied sample, including its four point coordinates.
+    applyProjectSnapshot(V13_DEFAULT_PROJECT);
+    icgDraftStatus('Проверяем сохранённую работу…');
+    let previous=null;
+    try{previous=await icgDraftReadLatest();}catch(e){console.warn('Draft recovery unavailable',e);}
+    if(previous){
+      try{
+        const choice=await icgDraftRestorePrompt(previous);
+        if(choice==='new'){
+          applyProjectSnapshot(V13_DEFAULT_PROJECT);
+          icgDraftStatus('Новая игра открыта. Изменения сохранятся автоматически.');
+        } else icgDraftStatus('Восстановлена последняя сохранённая работа.');
+      }catch(err){
+        console.warn('Saved draft is invalid',err);
+        icgDraftOverlay.hidden=true;
+        applyProjectSnapshot(V13_DEFAULT_PROJECT);
+        icgDraftStatus('Не удалось открыть сохранение. Начат новый проект.',true);
+      }
+    }else icgDraftStatus('Новая игра. Изменения сохраняются автоматически.');
+    icgDraftActive=true;
+  }
+  void icgDraftBootstrap();
+  // Diagnostic hooks for automated tests; no storage access is shared with external websites.
+  window.icgDraftDiagnostics=()=>({active:icgDraftActive,revision:icgDraftRevision,overlayVisible:!icgDraftOverlay.hidden,editorHome:IMAGE_CONNECT_EDITOR_HOME});
 
   setTimeout(updatePreview, 800);
 </script>
