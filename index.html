@@ -1331,62 +1331,26 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
       assets:{gameBackground:bgFileDataUrl, startBackground:startBgFileDataUrl, mapperImage:mapperImageDataUrl}
     };
   }
-  // v15: one-step local file saving; no links, handoff windows or transfer modals.
-  // In compatible browsers, the native Save As picker lets the user choose a folder.
-  // Other browsers receive a normal download request. The hosting site's iframe
-  // sandbox may block downloads; a child page cannot change its parent's permissions.
-  async function icgSaveFileDirect(blob, filename, extension, report){
-    const picker=window.showSaveFilePicker;
-    if(typeof picker === 'function' && window.self === window.top){
-      try {
-        const json=extension==='json';
-        const handle=await picker.call(window,{
-          suggestedName:filename,
-          types:[{
-            description:json?'JSON project':'HTML game',
-            accept:json?{'application/json':['.json']}:{'text/html':['.html']}
-          }]
-        });
-        const writable=await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        if(report)report('Файл сохранён: '+filename,false);
-        return true;
-      }catch(err){
-        if(err?.name==='AbortError') return false; // User canceled Save As.
-        // SecurityError happens in cross-origin/sandboxed frames; try regular download.
-        if(err?.name!=='SecurityError' && err?.name!=='NotAllowedError' && err?.name!=='NotSupportedError'){
-          console.warn('Не удалось сохранить файл через диалог браузера:',err);
-          if(report)report('Не удалось сохранить файл. Попробуйте ещё раз.',true);
-          return false;
-        }
-      }
-    }
-    try {
-      const uri=URL.createObjectURL(blob);
-      const link=document.createElement('a');
-      link.href=uri;
-      link.download=filename;
-      link.style.display='none';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(()=>URL.revokeObjectURL(uri),60000);
-      // No false 'saved' confirmation: sandboxed browsers do not expose download result.
-      if(report)report('',false);
-      return true;
-    }catch(err){
-      console.warn('Браузер не разрешил скачать файл:',err);
-      if(report)report('Браузер не разрешил скачивание файла.',true);
-      return false;
-    }
-  }
   window.saveProjectJSON = function() {
-    const snapshot=captureProjectSnapshot();
-    const title=(snapshot.settings['t-start-title']||'image-connect-project').trim()
-      .replace(/[^\w\u0400-\u04FF-]+/g,'_').slice(0,50)||'image-connect-project';
-    const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json;charset=utf-8'});
-    void icgSaveFileDirect(blob,title+'.json','json',projectMessage);
+    try {
+      const snapshot=captureProjectSnapshot();
+      const title=(snapshot.settings['t-start-title']||'image-connect-project').trim()
+        .replace(/[^\w\u0400-\u04FF-]+/g,'_').slice(0,50)||'image-connect-project';
+      const json=JSON.stringify(snapshot,null,2);
+      const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=title+'.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      projectMessage('');
+    } catch(err) {
+      console.error(err);
+      projectMessage('Не удалось подготовить JSON-файл.',true);
+    }
   };
   function applyProjectSnapshot(project) {
     if (!project || typeof project!=='object') throw new Error('Неподдерживаемый проект.');
@@ -2273,15 +2237,24 @@ ${latexLibraries}
   }
 
   window.downloadStandaloneGame = function() {
-    const html=buildWidgetCode('html');
-    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-    const status=document.getElementById('genially-copy-status');
-    const report=(message,bad)=>{
-      if(!status)return;
-      status.textContent=message;
-      status.classList.toggle('v12-copy-failed',!!bad);
-    };
-    void icgSaveFileDirect(blob,'Image_Connect_Game.html','html',report);
+    try {
+      const html=buildWidgetCode('html');
+      const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download='Image_Connect_Game.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      const status=document.getElementById('genially-copy-status');
+      if(status){status.textContent='';status.classList.remove('v12-copy-failed');}
+    } catch(err) {
+      console.error(err);
+      const status=document.getElementById('genially-copy-status');
+      if(status){status.textContent='Не удалось подготовить HTML-файл.';status.classList.add('v12-copy-failed');}
+    }
   };
 
   // v12: one-click iframe srcdoc for Genially. Show raw source only if copying is blocked.
