@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Image Connect Editor PRO v13</title>
+<title>Image Connect Editor PRO v14</title>
 <link rel="canonical" href="https://oksanabashlykova10-eng.github.io/Image_Connect_Editor/">
 <meta property="og:url" content="https://oksanabashlykova10-eng.github.io/Image_Connect_Editor/">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Cinzel:wght@700&family=Comic+Neue:wght@700&family=Courier+Prime:wght@700&family=Montserrat:wght@700&family=Permanent+Marker&family=Orbitron:wght@700&display=swap" rel="stylesheet">
@@ -288,6 +288,23 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
 .icg-autosave-status{display:block;min-height:16px;margin-top:9px;font-size:12px;color:#8be8c3;line-height:1.45;}
 .icg-autosave-status.is-error{color:#ffd18b;}
 @media(max-width:480px){.icg-draft-dialog{padding:23px 17px;}.icg-draft-dialog h2{font-size:19px;}.icg-draft-buttons{grid-template-columns:1fr;}}
+
+/* v14: export help only inside restricted embedded players (Genially, LMS). */
+.icg-export-overlay[hidden]{display:none!important;}
+.icg-export-overlay{position:fixed;inset:0;z-index:99995;background:rgba(3,6,15,.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;}
+.icg-export-dialog{width:min(95vw,550px);max-height:94dvh;overflow:auto;padding:26px 25px 22px;box-sizing:border-box;border:1px solid #e0ad57;border-radius:18px;box-shadow:0 0 40px #ad6cff55,0 20px 80px #000b;background:linear-gradient(135deg,#202131,#121921);color:#f9f5ff;text-align:center;font-family:inherit;}
+.icg-export-dialog h2{font-size:21px;line-height:1.35;margin:0 0 10px;color:#f5e5ff;}
+.icg-export-dialog p{font-size:13px;line-height:1.6;color:#d4d7e4;margin:9px 0 17px;}
+.icg-export-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:17px 0 12px;}
+.icg-export-actions button,.icg-export-actions a{font-family:inherit;font-weight:800;font-size:12px;line-height:1.45;border:1px solid #695478;border-radius:10px;min-height:48px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:9px 10px;cursor:pointer;text-decoration:none;color:#fff;background:#303246;}
+.icg-export-actions .icg-export-main{grid-column:1/-1;background:linear-gradient(100deg,#01b985,#07956f);color:#fff;border-color:#09d9ad;}
+.icg-export-actions button:hover,.icg-export-actions a:hover{filter:brightness(1.15);}
+.icg-export-message{font-size:12px;min-height:16px;line-height:1.6;color:#ffe0a0;overflow-wrap:anywhere;}
+.icg-export-backup[hidden]{display:none!important;}
+.icg-export-backup{margin-top:12px;padding:10px;border:1px solid #6b6475;border-radius:10px;background:#141520;text-align:left;}
+.icg-export-backup label{color:#e8d6ff;font-size:12px;font-weight:700;display:block;margin-bottom:7px;}
+.icg-export-backup textarea{display:block;width:100%;box-sizing:border-box;background:#080c15;color:#e4f8ff;border:1px solid #8c7ac3;padding:8px;min-height:90px;max-height:190px;resize:vertical;font-size:11px;}
+@media(max-width:480px){.icg-export-dialog{padding:20px 15px}.icg-export-actions{grid-template-columns:1fr}.icg-export-actions .icg-export-main{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -301,7 +318,7 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
 
 <div class="editor-layout">
   <div class="settings-panel">
-    <div class="editor-nav-head"><div class="editor-nav-title">⚡ НАСТРОЙКИ ИГРЫ</div><span>IMAGE CONNECT PRO · v13</span></div>
+    <div class="editor-nav-head"><div class="editor-nav-title">⚡ НАСТРОЙКИ ИГРЫ</div><span>IMAGE CONNECT PRO · v14</span></div>
     <nav class="editor-tab-nav" role="tablist" aria-label="Разделы редактора">
 <button type="button" role="tab" class="editor-tab active" id="tab-btn-global" data-editor-tab="global" aria-controls="tab-page-global" aria-selected="true" style="--tab-glow:var(--tab-global)"><span class="tab-emoji">🌐</span><span class="tab-name">Глобальные настройки</span></button>
 <button type="button" role="tab" class="editor-tab " id="tab-btn-start" data-editor-tab="start" aria-controls="tab-page-start" aria-selected="false" style="--tab-glow:var(--tab-start)"><span class="tab-emoji">🎬</span><span class="tab-name">Заставка</span></button>
@@ -691,6 +708,36 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
 </div>
 
 
+
+<!-- v14: Embedded download assistance, never included in game export. -->
+<div class="icg-export-overlay" id="icg-export-overlay" hidden>
+  <section class="icg-export-dialog" role="dialog" aria-modal="true" aria-labelledby="icg-export-title">
+    <h2 id="icg-export-title">⬇️ Сохранение игры</h2>
+    <p id="icg-export-description">Для скачивания файлов откройте редактор в отдельной вкладке. Текущие настройки перенесутся автоматически.</p>
+    <div class="icg-export-actions">
+      <button id="icg-export-transfer" class="icg-export-main" type="button" onclick="icgOpenStandaloneExport()">↗ Открыть и перенести мою игру</button>
+      <button type="button" onclick="icgShowExportBackup()">📋 Резервная копия JSON</button>
+      <button type="button" onclick="icgCloseExportHandoff()">Закрыть</button>
+    </div>
+    <div id="icg-export-message" class="icg-export-message" role="status" aria-live="polite"></div>
+    <div class="icg-export-backup" id="icg-export-backup" hidden>
+      <label for="icg-export-backup-text">Если новая вкладка не открывается, скопируйте JSON — его можно вставить в редактор в отдельной вкладке.</label>
+      <textarea id="icg-export-backup-text" readonly spellcheck="false"></textarea>
+      <div class="icg-export-actions"><button type="button" onclick="icgCopyExportBackup()">📋 Копировать JSON</button><a id="icg-export-home-link" href="https://oksanabashlykova10-eng.github.io/Image_Connect_Editor/?icg_import=1" target="_blank">↗ Открыть редактор отдельно</a></div>
+    </div>
+  </section>
+</div>
+
+<!-- v14: manual paste backup for players forbidding popups. -->
+<div class="icg-export-overlay" id="icg-import-overlay" hidden>
+  <section class="icg-export-dialog" role="dialog" aria-modal="true" aria-labelledby="icg-import-title">
+    <h2 id="icg-import-title">📋 Восстановить проект из буфера</h2>
+    <p>Вставьте скопированный JSON (Ctrl+V) и нажмите «Открыть проект». Настройки и аудио вернутся в редактор.</p>
+    <textarea id="icg-import-text" placeholder="Вставьте здесь JSON вашего проекта…" style="display:block;min-height:140px;max-height:38dvh;resize:vertical;width:100%;box-sizing:border-box;background:#0b1220;border:1px solid #b293ef;border-radius:10px;color:#f1f6ff;padding:12px;font:12px/1.5 monospace;"></textarea>
+    <div class="icg-export-actions"><button class="icg-export-main" type="button" onclick="icgImportPastedProject()">✓ Открыть проект</button><button type="button" onclick="icgCloseImport()">Закрыть</button></div>
+    <div id="icg-import-message" class="icg-export-message" role="status" aria-live="polite"></div>
+  </section>
+</div>
 <!-- v11: Authoring recommendations; editor UI only (not part of exported game). -->
 <div class="icg-guide-overlay" id="icg-guide-modal" hidden>
   <section class="icg-guide-dialog" role="dialog" aria-modal="true" aria-labelledby="icg-guide-title" aria-describedby="icg-guide-subtitle" tabindex="-1">
@@ -1325,23 +1372,138 @@ body { padding:12px 16px 14px; box-sizing:border-box; }
       settings[el.id] = el.type === 'checkbox' ? el.checked : el.value;
     });
     return {
-      format:'NeonImageConnectEditor', version:13,
+      format:'NeonImageConnectEditor', version:14,
       settings,
       points:pointsData.map(p=>({...p})),
       assets:{gameBackground:bgFileDataUrl, startBackground:startBgFileDataUrl, mapperImage:mapperImageDataUrl}
     };
   }
   window.saveProjectJSON = function() {
+    if (window.self !== window.top) {
+      icgShowExportHandoff('json');
+      return;
+    }
     const snapshot=captureProjectSnapshot();
     const settings=snapshot.settings;
     const title = (settings['t-start-title'] || 'image-connect-project').trim().replace(/[^\w\u0400-\u04FF-]+/g,'_').slice(0,50) || 'image-connect-project';
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], {type:'application/json'});
-    const uri = URL.createObjectURL(blob);
-    const link = document.createElement('a'); link.href=uri; link.download=title+'.json';
-    document.body.appendChild(link); link.click(); link.remove();
-    setTimeout(()=>URL.revokeObjectURL(uri),30000);
-    projectMessage('Проект сохранён: '+title+'.json');
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], {type:'application/json;charset=utf-8'});
+    icgDownloadBlob(blob, title+'.json');
+    projectMessage('Запрос на скачивание JSON отправлен. Проверьте загрузки браузера.');
   };
+  // v14: Genially can sandbox embedded frames without allow-downloads.
+  // Browser restrictions cannot be bypassed from within the iframe. Instead,
+  // hand the *actual current project* to a standalone editor tab over postMessage.
+  const ICG_HANDOFF_QUERY='icg_handoff';
+  let icgEmbeddedExportMode='json';
+  let icgActiveExportTransfer=null;
+  function icgShowExportHandoff(mode){
+    icgEmbeddedExportMode=mode==='html'?'html':'json';
+    document.getElementById('icg-export-title').textContent=icgEmbeddedExportMode==='json'?'💾 Сохранить проект JSON':'⬇️ Скачать игру HTML';
+    document.getElementById('icg-export-description').textContent='Внутри Genially скачивание может блокироваться браузером. Откройте редактор отдельно — текущая игра с настройками, картинками и аудио перенесётся в новую вкладку.';
+    document.getElementById('icg-export-message').textContent='';
+    document.getElementById('icg-export-backup').hidden=true;
+    document.getElementById('icg-export-overlay').hidden=false;
+    document.getElementById('icg-export-transfer').focus();
+  }
+  window.icgShowExportHandoff=icgShowExportHandoff;
+  window.icgCloseExportHandoff=()=>{document.getElementById('icg-export-overlay').hidden=true;};
+  window.icgShowExportBackup=()=>{
+    document.getElementById('icg-export-backup').hidden=false;
+    document.getElementById('icg-export-backup-text').value=JSON.stringify(captureProjectSnapshot(),null,2);
+    document.getElementById('icg-export-message').textContent='Если перенос не разрешён браузером, скопируйте JSON и откройте редактор по ссылке ниже. Там можно сразу вставить текст проекта.';
+  };
+  window.icgCopyExportBackup=async()=>{
+    const ta=document.getElementById('icg-export-backup-text');
+    ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
+    let copied=false;
+    try{copied=document.execCommand('copy');}catch(_){ }
+    if(!copied){try{await navigator.clipboard.writeText(ta.value);copied=true;}catch(_){ }}
+    document.getElementById('icg-export-message').textContent=copied?'JSON скопирован. Откройте редактор по кнопке ниже и вставьте скопированный JSON.':'Скопируйте выделенный текст сочетанием Ctrl+C и сохраните его как .json.';
+  };
+  window.icgOpenStandaloneExport=()=>{
+    const token=Array.from(crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
+    const url=new URL(IMAGE_CONNECT_EDITOR_HOME);
+    url.searchParams.set(ICG_HANDOFF_QUERY,token);
+    url.searchParams.set('icg_save',icgEmbeddedExportMode);
+    const project=captureProjectSnapshot();
+    // window.open must happen directly in the user's click handler.
+    const next=window.open(url.href,'_blank');
+    if(!next){
+      document.getElementById('icg-export-message').textContent='Браузер заблокировал новую вкладку. Разрешите всплывающие окна либо используйте резервную копию JSON ниже.';
+      icgShowExportBackup();
+      return;
+    }
+    icgActiveExportTransfer={next,token,project,started:Date.now()};
+    document.getElementById('icg-export-message').textContent='Новая вкладка открывается. После переноса нажмите там нужную кнопку скачивания.';
+    setTimeout(()=>{
+      if(icgActiveExportTransfer?.token===token){
+        document.getElementById('icg-export-message').textContent='Не удалось подтвердить перенос. Не закрывайте исходную игру; можно сделать резервную копию JSON.';
+      }
+    },14000);
+  };
+  window.addEventListener('message',evt=>{
+    const item=evt.data;
+    if(!item || typeof item!=='object')return;
+    if(item.type==='ICG_HANDOFF_READY' && icgActiveExportTransfer && item.token===icgActiveExportTransfer.token && evt.source===icgActiveExportTransfer.next){
+      // Transfer only to our own published HTTPS editor.
+      if(evt.origin!==new URL(IMAGE_CONNECT_EDITOR_HOME).origin)return;
+      evt.source.postMessage({type:'ICG_HANDOFF_PROJECT',token:item.token,project:icgActiveExportTransfer.project},evt.origin);
+    }
+    if(item.type==='ICG_HANDOFF_DONE' && icgActiveExportTransfer && item.token===icgActiveExportTransfer.token && evt.source===icgActiveExportTransfer.next){
+      document.getElementById('icg-export-message').textContent='✓ Проект перенесён! В новой вкладке можно скачать файл.';
+      icgActiveExportTransfer=null;
+    }
+  });
+  window.icgCloseImport=()=>{
+    document.getElementById('icg-import-overlay').hidden=true;
+    try{history.replaceState(null,'',location.pathname+location.hash);}catch(_){}
+  };
+  window.icgImportPastedProject=()=>{
+    const msg=document.getElementById('icg-import-message');
+    try{
+      const project=JSON.parse(document.getElementById('icg-import-text').value.trim());
+      applyProjectSnapshot(project);
+      icgDraftActive=true;
+      icgCloseImport();
+      switchEditorTab('code');
+      projectMessage('✓ Проект восстановлен. Вы можете скачать JSON или HTML.');
+      scheduleDraftSave();
+    }catch(e){msg.textContent='Не удалось открыть JSON: '+String(e.message||e).slice(0,150);}
+  };
+  function icgInitHandoffReceiver(){
+    const params=new URLSearchParams(location.search);
+    const token=params.get(ICG_HANDOFF_QUERY);
+    if(!token || !/^[a-f0-9]{32}$/.test(token) || !window.opener)return false;
+    let finished=false,tries=0;
+    const receive=event=>{
+      if(event.source!==window.opener || event.data?.type!=='ICG_HANDOFF_PROJECT' || event.data.token!==token || finished)return;
+      if(event.origin!==location.origin && event.origin!=='null')return;
+      try{
+        applyProjectSnapshot(event.data.project);
+        icgDraftActive=true;
+        switchEditorTab('code');
+        scheduleDraftSave();
+        const mode=params.get('icg_save');
+        if(mode==='html'){
+          document.getElementById('genially-copy-status').textContent='✓ Игра перенесена. Нажмите «Скачать игру HTML».';
+        }else projectMessage('✓ Проект перенесён. Нажмите «Сохранить JSON».');
+        event.source.postMessage({type:'ICG_HANDOFF_DONE',token},'*');
+        finished=true;
+        try{history.replaceState(null,'',location.pathname+location.hash);}catch(_){}
+      }catch(err){
+        console.error('Could not receive handoff project',err);
+        icgDraftStatus('⚠ Не удалось перенести проект. Используйте JSON-резервную копию.',true);
+      }
+    };
+    window.addEventListener('message',receive);
+    const ask=()=>{
+      if(finished || ++tries>35){clearInterval(requestTimer);return;}
+      try{window.opener.postMessage({type:'ICG_HANDOFF_READY',token},'*');}catch(_){ }
+    };
+    const requestTimer=setInterval(ask,350);
+    ask();
+    return true;
+  }
   function applyProjectSnapshot(project) {
     if (!project || typeof project!=='object') throw new Error('Неподдерживаемый проект.');
     const oldFlag=icgDraftApplying; icgDraftApplying=true;
@@ -2227,13 +2389,24 @@ ${latexLibraries}
   }
 
   window.downloadStandaloneGame = function() {
+    if (window.self !== window.top) {
+      icgShowExportHandoff('html');
+      return;
+    }
     const html=buildWidgetCode('html');
     const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download='Image_Connect_Game.html';
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),15000);
+    icgDownloadBlob(blob,'Image_Connect_Game.html');
+    const status=document.getElementById('genially-copy-status');
+    if(status) {status.textContent='Запрос на скачивание HTML отправлен. Проверьте загрузки браузера.';status.classList.remove('v12-copy-failed');}
   };
+  function icgDownloadBlob(blob,name){
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;link.download=name;
+    link.style.display='none';document.body.appendChild(link);
+    link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }
 
   // v12: one-click iframe srcdoc for Genially. Show raw source only if copying is blocked.
   window.copyGeniallyIframe = async function() {
@@ -2580,6 +2753,20 @@ ${latexLibraries}
   async function icgDraftBootstrap(){
     // Start with the EXACT author-supplied sample, including its four point coordinates.
     applyProjectSnapshot(V13_DEFAULT_PROJECT);
+    // Incoming project handoff takes priority over the last autosaved draft.
+    // Do not show the restore modal while waiting for the new tab to receive it.
+    if(icgInitHandoffReceiver()){
+      icgDraftStatus('Получаем вашу игру из Genially…');
+      icgDraftActive=true;
+      return;
+    }
+    if(new URLSearchParams(location.search).has('icg_import')){
+      icgDraftActive=true;
+      icgDraftStatus('Вставьте резервный JSON в открывшееся окно.');
+      document.getElementById('icg-import-overlay').hidden=false;
+      document.getElementById('icg-import-text').focus();
+      return;
+    }
     icgDraftStatus('Проверяем сохранённую работу…');
     let previous=null;
     try{previous=await icgDraftReadLatest();}catch(e){console.warn('Draft recovery unavailable',e);}
